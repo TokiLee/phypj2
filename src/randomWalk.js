@@ -1,21 +1,92 @@
-let x2;
-let y2;
-let x1;
-let y1;
-let count;
+let x = 0;
+let y = 0;
+
+let step = 0;
+let it = 0;
+
+let drawToggle = false;
+
+const data = {
+  distance: [],
+  averageDistance: [],
+  log: [],
+  coordinates: []
+};
+
+// Data Generation
+for (let i = 10; i < 100000; i *= 10) {
+  let distanceData = [];
+
+  let itCoordinates = [];
+  // Loops through 20 iterations
+  for (let j = 0; j < 20; j++) {
+    x = 0;
+    y = 0;
+
+    let coordinate = {
+      xpos: [],
+      ypos: []
+    };
+
+    //  Generates random walk data
+    for (let k = 0; k < i; k++) {
+      let r = Math.floor(Math.random() * Math.floor(4));
+      switch (r) {
+        // East
+        case 0: {
+          x = x + 1;
+          break;
+        }
+        // West
+        case 1: {
+          x = x - 1;
+          break;
+        }
+        // North
+        case 2: {
+          y = y + 1;
+          break;
+        }
+        // South
+        case 3: {
+          y = y - 1;
+          break;
+        }
+      }
+      coordinate.xpos.push(x);
+      coordinate.ypos.push(y);
+    }
+    // Push calculated distance into distance array
+    distanceData.push(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)));
+
+    // Add coordinates to data
+    itCoordinates.push(coordinate);
+  }
+
+  let totalDistance = 0;
+
+  distanceData.forEach(function(distance) {
+    totalDistance += distance;
+  });
+
+  let distanceAverage = totalDistance / 20;
+  data.averageDistance.push(distanceAverage);
+  data.log.push(Math.log(distanceAverage));
+  data.coordinates.push(itCoordinates);
+}
 
 // Line Graph
 var ctx = document.getElementById("distance-graph").getContext("2d");
 let distanceGraph = new Chart(ctx, {
   type: "line",
   data: {
-    labels: [0],
+    labels: [10, 100, 1000, 10000],
     datasets: [
       {
         label: "Distance from Origin",
         backgroundColor: "rgb(255, 99, 132)",
         borderColor: "rgb(255, 99, 132)",
-        data: [0],
+        data: data.averageDistance,
         fill: false
       }
     ]
@@ -61,13 +132,13 @@ var ctx = document.getElementById("log-graph").getContext("2d");
 let logGraph = new Chart(ctx, {
   type: "line",
   data: {
-    labels: [0],
+    labels: [10, 100, 1000, 10000],
     datasets: [
       {
         label: "Log of Distance",
         backgroundColor: "rgb(54, 162, 235)",
         borderColor: "rgb(54, 162, 235)",
-        data: [0],
+        data: data.log,
         fill: false
       }
     ]
@@ -76,7 +147,7 @@ let logGraph = new Chart(ctx, {
     responsive: true,
     title: {
       display: true,
-      text: "Random Walk Distance from Origin"
+      text: "Log Random Walk Distance from Origin"
     },
     tooltips: {
       mode: "index",
@@ -109,56 +180,52 @@ let logGraph = new Chart(ctx, {
   }
 });
 
-function addData(graph, label, data) {
-  graph.data.labels.push(label);
-  graph.data.datasets[0].data.push(data);
-  graph.update();
-}
+console.log(data.coordinates);
+console.log(data.coordinates[0][0].xpos[0]);
 
-// Random Walk
+// P5
 window.setup = function() {
   let cnv = createCanvas(800, 800);
   cnv.parent("random-walk");
-  x1 = 400;
-  y1 = 400;
-  x2 = 400;
-  y2 = 400;
-  count = 0;
-  background(51);
+  background(175);
+  buffer = createGraphics(800, 800);
+  buffer.background(175);
+  buffer.translate(400, 400);
+  document.getElementById("generate").addEventListener("click", function() {
+    step = document.getElementById("steps").options[steps.selectedIndex].value;
+    it = document.getElementById("iteration").options[iteration.selectedIndex]
+      .value;
+    drawToggle = true;
+
+    console.log(step);
+    console.log(it);
+  });
 };
 
 window.draw = function() {
-  stroke(255, 100);
-  strokeWeight(4);
+  stroke(50);
+  strokeWeight(3);
 
-  line(x1, y1, x2, y2);
+  if (drawToggle) {
+    buffer.clear();
+    background(175);
+    imageMode(CORNER);
+    image(buffer, 0, 0, 800, 800);
+    let oldx = 400;
+    let oldy = 400;
 
-  x1 = x2;
-  y1 = y2;
+    for (i = 0; i < data.coordinates[step][it].xpos.length; i++) {
+      line(
+        oldx,
+        oldy,
+        oldx + data.coordinates[step][it].xpos[i],
+        oldy + data.coordinates[step][it].ypos[i]
+      );
+      fill(0);
 
-  var r = floor(random(4));
-
-  switch (r) {
-    case 0:
-      x2 = x2 + 4;
-      break;
-    case 1:
-      x2 = x2 - 4;
-      break;
-    case 2:
-      y2 = y2 + 4;
-      break;
-    case 3:
-      y2 = y2 - 4;
-      break;
-  }
-
-  count += 1;
-
-  if (count % 180 === 0) {
-    let distance = Math.sqrt(Math.pow(x2 - 400, 2) + Math.pow(y2 - 400, 2));
-    let log = Math.log(distance);
-    addData(distanceGraph, count, distance);
-    addData(logGraph, count, log);
+      oldx += data.coordinates[step][it].xpos[i];
+      oldy += data.coordinates[step][it].ypos[i];
+    }
+    drawToggle = false;
   }
 };
